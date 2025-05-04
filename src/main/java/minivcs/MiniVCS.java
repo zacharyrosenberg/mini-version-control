@@ -1,3 +1,6 @@
+package minivcs;
+
+import java.io.IOException;
 
 public class MiniVCS {
     public static void main(String[] args) {
@@ -5,6 +8,7 @@ public class MiniVCS {
         // Check if any arguments are provided
         if (args.length == 0) {
             System.out.println("No arguments provided");
+            printUsage();
             return;
         }
 
@@ -31,7 +35,7 @@ public class MiniVCS {
                     addCommand(commandArgs);
                     break;
                 case "rm":
-                    rmComand(commandArgs);
+                    rmCommand(commandArgs);
                     break;
                 case "status":
                     statusCommand(commandArgs);
@@ -56,5 +60,57 @@ public class MiniVCS {
             System.err.println("Error: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    // Print usage information
+    private static void printUsage() {
+        System.out.println("Usage: minivcs <command> [<args>]");
+        System.out.println("Commands:");
+        System.out.println("  init                Initialize a new repository");
+        System.out.println("  add <file>          Add file contents to the index");
+        System.out.println("  rm <file>           Remove files from the working tree and the index");
+        System.out.println("  status              Show the working tree status");
+        System.out.println("  commit -m <msg>     Record changes to the repository with message");
+        System.out.println("  log                 Show commit logs");
+        System.out.println("  diff <file>         Show changes between working directory and index");
+    }
+
+    // Command implementations (stubs)
+    private static void initCommand(String[] args) {
+        try {
+
+            // Get current directory path if none is specified
+            String path = args.length > 0 ? args[0] : System.getProperty("user.dir");
+
+            // Initialize repository
+            Repository.initialize(path);
+        } catch (IOException e) {
+            System.err.println("Error initializing repository: " + e.getMessage());
+
+        }
+    }
+
+    private static void addCommand(String[] args) {
+        System.out.println("'add' command not yet implemented");
+    }
+
+    private static void rmCommand(String[] args) {
+        System.out.println("'rm' command not yet implemented");
+    }
+
+    private static void statusCommand(String[] args) {
+        System.out.println("'status' command not yet implemented");
+    }
+
+    private static void commitCommand(String[] args) {
+        System.out.println("'commit' command not yet implemented");
+    }
+
+    private static void logCommand(String[] args) {
+        System.out.println("'log' command not yet implemented");
+    }
+
+    private static void diffCommand(String[] args) {
+        System.out.println("'diff' command not yet implemented");
     }
 }

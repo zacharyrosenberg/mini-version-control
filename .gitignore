@@ -1,0 +1,30 @@
+# Compiled class files
+*.class
+out/
+bin/
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+.vscode/
+
+# macOS specific files
+.DS_Store
+
+# The .minivcs directory (since this is your program's output)
+.minivcs/
+
+# Logs
+*.log
+
+# Build tool specific
+target/
+build/ 
