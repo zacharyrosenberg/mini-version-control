@@ -139,7 +139,7 @@ public class IndexEntry {
         String hash = parts[1];
         long fileSize = Long.parseLong(parts[2]);
         long lastModified = Long.parseLong(parts[3]);
-        int fileMode = Integer.parseInt(parts[4], 8);
+        int fileMode = Integer.parseInt(parts[4]);
 
         return new IndexEntry(Path.of(path), hash, fileSize, lastModified, fileMode);
     }

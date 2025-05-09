@@ -2,6 +2,7 @@
 *.class
 out/
 bin/
+test-repo/
 
 # Package files
 *.jar
