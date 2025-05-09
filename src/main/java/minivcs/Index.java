@@ -131,4 +131,16 @@ public class Index {
         }
     }
 
+    /**
+     * Returns all entries in the index.
+     * This method provides access to all tracked files and their metadata
+     * for operations like status checking, diff, and commit.
+     * 
+     * @return A map of relative file paths to their corresponding IndexEntry
+     *         objects
+     */
+    public Map<String, IndexEntry> getEntries() {
+        return this.entries;
+    }
+
 }

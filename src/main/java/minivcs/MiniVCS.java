@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+import java.util.Map;
+import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Main class for the MiniVCS version control system.
@@ -163,15 +168,66 @@ public class MiniVCS {
 
     /**
      * Shows the working tree status, comparing index with working directory.
+     * Identifies files that are:
+     * - Deleted: in the index but not in working directory
+     * - Modified: in both index and working directory but with different content
+     * - Staged: in index with no changes
+     * - Untracked: in working directory but not in index
      * 
      * @param args Command arguments (unused)
      */
     private static void statusCommand(String[] args) {
-        System.out.println("'status' command not yet implemented");
-        // TODO: Implement status command
-        // 1. List staged changes (in index)
-        // 2. List modified files not staged
-        // 3. List untracked files
+        try {
+            // Find repository root and return if not found
+            Path repoPath = findRepoRoot();
+            if (repoPath == null) {
+                System.out.println("No MiniVCS repository found");
+                return;
+            }
+
+            // Load the index file to get tracked files
+            Index index = new Index();
+            index.load(repoPath);
+            Map<String, IndexEntry> stagedFiles = index.getEntries();
+
+            // Compare each indexed file with its current state in working directory
+            for (Map.Entry<String, IndexEntry> entry : stagedFiles.entrySet()) {
+                // Check if file has been deleted from working directory
+                if (!Files.exists(Paths.get(entry.getKey()))) {
+                    System.out.println("Deleted: " + entry.getKey());
+                    continue;
+                }
+
+                // Check if file has been modified by comparing hashes
+                String storedHash = entry.getValue().getHash();
+                String currentHash = ObjectStore.createHash(Paths.get(entry.getKey()));
+
+                if (!storedHash.equals(currentHash)) {
+                    System.out.println("Modified: " + entry.getKey());
+                } else {
+                    System.out.println("Staged: " + entry.getKey());
+                }
+            }
+
+            // Find untracked files by walking the directory tree
+            Set<String> indexPaths = stagedFiles.keySet();
+            List<String> untrackedFiles = new ArrayList<>();
+
+            Files.walk(repoPath)
+                    .filter(Files::isRegularFile) // Only consider regular files
+                    .filter(path -> !path.startsWith(repoPath.resolve(".minivcs"))) // Exclude the .minivcs directory
+                    .map(path -> repoPath.relativize(path).toString()) // Convert to relative paths
+                    .filter(relativePath -> !indexPaths.contains(relativePath)) // Exclude files already in index
+                    .forEach(untrackedFiles::add);
+
+            // Display untracked files
+            for (String file : untrackedFiles) {
+                System.out.println("Untracked: " + file);
+            }
+
+        } catch (IOException | NoSuchAlgorithmException e) {
+            System.err.println("Error getting status: " + e.getMessage());
+        }
     }
 
     /**
