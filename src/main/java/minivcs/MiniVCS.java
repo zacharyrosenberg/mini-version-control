@@ -1,6 +1,9 @@
 package minivcs;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.Files;
 
 /**
  * Main class for the MiniVCS version control system.
@@ -113,12 +116,36 @@ public class MiniVCS {
      * @param args Command arguments. args[0] is the path to the file to add
      */
     private static void addCommand(String[] args) {
-        System.out.println("'add' command not yet implemented");
-        // TODO: Implement add command
-        // 1. Validate args (file path exists)
-        // 2. Read file content
-        // 3. Store file in object database
-        // 4. Update index with file info
+        if (args.length == 0) {
+            System.out.println("No file provided");
+            return;
+        }
+
+        try {
+            Path repoRoot = findRepoRoot();
+            if (repoRoot == null) {
+                System.out.println("No MiniVCS repository found");
+                return;
+            }
+
+            Index index = new Index();
+            index.load(repoRoot);
+
+            for (String filePath : args) {
+                Path currentDir = Paths.get(System.getProperty("user.dir"));
+                Path fullPath = currentDir.resolve(filePath);
+                if (!Files.exists(fullPath)) {
+                    System.out.println("File does not exist: " + filePath);
+                    continue;
+                }
+
+                index.add(repoRoot, fullPath);
+                System.out.println("Added: " + filePath);
+            }
+
+        } catch (IOException e) {
+            System.err.println("Error adding file: " + e.getMessage());
+        }
     }
 
     /**
@@ -186,5 +213,22 @@ public class MiniVCS {
         // 1. Get file from index
         // 2. Compare with working directory version
         // 3. Generate diff output
+    }
+
+    private static Path findRepoRoot() {
+        Path currentDir = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
+
+        // Traverse up the directory tree until we find a .minivcs directory
+        while (currentDir != null) {
+            Path minivcsDir = currentDir.resolve(".minivcs");
+            // Check if .minivcs directory exists and is a directory
+            if (Files.exists(minivcsDir) && Files.isDirectory(minivcsDir)) {
+                return currentDir;
+            }
+            // Move to the parent directory
+            currentDir = currentDir.getParent();
+        }
+        // If no .minivcs directory is found, return null
+        return null;
     }
 }
