@@ -236,12 +236,57 @@ public class MiniVCS {
      * @param args Command arguments. Should include "-m" followed by commit message
      */
     private static void commitCommand(String[] args) {
-        System.out.println("'commit' command not yet implemented");
-        // TODO: Implement commit command
-        // 1. Check for commit message
-        // 2. Create tree objects for current directory state
-        // 3. Create commit object with parent reference
-        // 4. Update HEAD reference
+        try {
+            // Find the root of the repository
+            Path repoRoot = findRepoRoot();
+            if (repoRoot == null) {
+                System.out.println("No MiniVCS repository found");
+                return;
+            }
+
+            // Load the current index (staging area)
+            Index index = new Index();
+            index.load(repoRoot);
+            // Get all files that have been staged
+            Map<String, IndexEntry> stagedFiles = index.getEntries();
+
+            // Parse commit message from arguments by finding the -m flag
+            String commitMessage = null;
+            for (int i = 0; i < args.length - 1; i++) {
+                if (args[i].equals("-m")) {
+                    // Take the argument immediately following -m as the message
+                    commitMessage = args[i + 1];
+                    break;
+                }
+            }
+
+            // Validate that a commit message was provided
+            if (commitMessage == null || commitMessage.isEmpty()) {
+                System.out.println("No commit message provided");
+                return;
+            }
+
+            System.out.println("Creating commit with message: " + commitMessage);
+
+            // Check if there are any changes to commit
+            if (stagedFiles.isEmpty()) {
+                System.out.println("No changes to commit");
+                return;
+            }
+
+            // TODO: Next steps for commit implementation:
+            // 1. Create tree objects representing the directory structure
+            // 2. Create a commit object pointing to:
+            // - The root tree object
+            // - The parent commit (previous HEAD, if exists)
+            // - Include author/timestamp information
+            // - Store the commit message
+            // 3. Update the HEAD reference to point to the new commit
+            // 4. (Optional) Update the current branch reference
+
+        } catch (IOException e) {
+            System.err.println("Error committing changes: " + e.getMessage());
+        }
     }
 
     /**
