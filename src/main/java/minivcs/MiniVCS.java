@@ -231,9 +231,19 @@ public class MiniVCS {
     }
 
     /**
-     * Records changes to the repository.
+     * Records changes to the repository by creating a new commit.
+     * This method:
+     * 1. Verifies repository existence and loads the index
+     * 2. Validates the commit message
+     * 3. Creates tree objects representing the directory structure
+     * 4. Determines the parent commit from HEAD reference
+     * 5. Creates a new commit object with metadata (author, timestamp, message)
+     * 6. Updates the HEAD and relevant branch references
      * 
      * @param args Command arguments. Should include "-m" followed by commit message
+     * @throws IOException              If there's an error reading or writing
+     *                                  repository files
+     * @throws NoSuchAlgorithmException If SHA-1 hashing algorithm is not available
      */
     private static void commitCommand(String[] args) throws IOException, NoSuchAlgorithmException {
         try {
