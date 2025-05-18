@@ -235,7 +235,7 @@ public class MiniVCS {
      * 
      * @param args Command arguments. Should include "-m" followed by commit message
      */
-    private static void commitCommand(String[] args) {
+    private static void commitCommand(String[] args) throws IOException, NoSuchAlgorithmException {
         try {
             // Find the root of the repository
             Path repoRoot = findRepoRoot();
@@ -274,15 +274,66 @@ public class MiniVCS {
                 return;
             }
 
-            // TODO: Next steps for commit implementation:
-            // 1. Create tree objects representing the directory structure
-            // 2. Create a commit object pointing to:
-            // - The root tree object
-            // - The parent commit (previous HEAD, if exists)
-            // - Include author/timestamp information
-            // - Store the commit message
-            // 3. Update the HEAD reference to point to the new commit
-            // 4. (Optional) Update the current branch reference
+            // Create tree objects representing the directory structure
+            Tree rootTree = Tree.createTreeFromIndex(repoRoot, stagedFiles);
+            String treeHash = rootTree.getHash();
+            System.out.println("Created tree with hash: " + treeHash);
+
+            // Get parent commit hash (from current HEAD)
+            String parentHash = "";
+            Path headPath = repoRoot.resolve(".minivcs/HEAD");
+            if (Files.exists(headPath)) {
+                String headContent = Files.readString(headPath).trim();
+
+                // Check if HEAD is a reference or a direct commit hash
+                if (headContent.startsWith("ref: ")) {
+                    // HEAD points to a branch reference
+                    String branchRef = headContent.substring(5); // Remove "ref:" prefix
+                    Path branchPath = repoRoot.resolve(".minivcs").resolve(branchRef);
+
+                    if (Files.exists(branchPath)) {
+                        parentHash = Files.readString(branchPath).trim();
+                    }
+                } else {
+                    parentHash = headContent;
+                }
+            }
+
+            // Generate author and timestamp
+            String author = System.getProperty("user.name");
+            String timestamp = String.valueOf(System.currentTimeMillis() / 1000);
+
+            // Create the commit with all collected information
+            Commit newCommit = Commit.createCommit(
+                    parentHash,
+                    treeHash,
+                    author,
+                    timestamp,
+                    commitMessage,
+                    repoRoot.resolve(".minivcs"));
+
+            String commitHash = newCommit.getCommitHash();
+            System.out.println("Created commit with hash: " + commitHash);
+
+            // Update the HEAD and branch references
+            Path headRefPath = null;
+            if (Files.exists(headPath)) {
+                String headContent = Files.readString(headPath).trim();
+                if (headContent.startsWith("ref: ")) {
+                    // Update the branch that HEAD points to
+                    headRefPath = repoRoot.resolve(".minivcs").resolve(headContent.substring(5));
+                }
+            }
+
+            // If we found a branch reference, update it; otherwise update HEAD directly
+            if (headRefPath != null) {
+                Files.createDirectories(headRefPath.getParent());
+                Files.writeString(headRefPath, commitHash);
+            } else {
+                Files.writeString(headPath, commitHash);
+            }
+
+            System.out.println("Commit complete: " + commitHash.substring(0, 7) + " " + commitMessage);
 
         } catch (IOException e) {
             System.err.println("Error committing changes: " + e.getMessage());
