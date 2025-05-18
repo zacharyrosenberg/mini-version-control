@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.NoSuchAlgorithmException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Provides content-addressable storage for repository objects.
@@ -45,6 +46,25 @@ public class ObjectStore {
     }
 
     /**
+     * Calculates a SHA-1 hash for a string content.
+     * 
+     * @param object The string content to hash
+     * @return A string representation of the SHA-1 hash in hexadecimal
+     * @throws NoSuchAlgorithmException If SHA-1 algorithm is not available
+     */
+    public static String createHashFromString(String object) throws NoSuchAlgorithmException {
+        // Initialize SHA-1 message digest
+        MessageDigest digest = MessageDigest.getInstance("SHA-1");
+
+        // Update digest with string bytes
+        digest.update(object.getBytes(StandardCharsets.UTF_8));
+
+        // Get hash and convert to hex string
+        byte[] hashBytes = digest.digest();
+        return bytesToHex(hashBytes);
+    }
+
+    /**
      * Stores a file in the object database using its content hash as identifier.
      * Files are stored in a two-level directory structure (like Git) where the
      * first
@@ -77,6 +97,37 @@ public class ObjectStore {
         // Create directory if needed and copy the file
         Files.createDirectories(objectPath.getParent());
         Files.copy(filepath, objectPath, StandardCopyOption.REPLACE_EXISTING);
+
+        return hash;
+    }
+
+    /**
+     * Stores a string content in the object database using its hash as identifier.
+     * The string is stored in the same two-level directory structure used for
+     * files.
+     * 
+     * @param object   The string content to store
+     * @param repoPath Path to the .minivcs directory
+     * @return The SHA-1 hash of the stored content
+     * @throws IOException              If there's an error writing the string to
+     *                                  storage
+     * @throws NoSuchAlgorithmException If SHA-1 algorithm is not available
+     */
+    public static String saveObjectFromString(String object, Path repoPath)
+            throws IOException, NoSuchAlgorithmException {
+        // Get object hash
+        String hash = createHashFromString(object);
+
+        // Use first 2 chars for directory name, rest for file name
+        String directory = hash.substring(0, 2);
+        String filename = hash.substring(2);
+
+        // Construct the path where object will be stored
+        Path objectPath = repoPath.resolve("objects").resolve(directory).resolve(filename);
+
+        // Create directory if needed and write the object to the file
+        Files.createDirectories(objectPath.getParent());
+        Files.writeString(objectPath, object);
 
         return hash;
     }

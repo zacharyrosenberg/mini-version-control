@@ -8,6 +8,10 @@ import java.nio.file.Path;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * Represents a directory tree in the version control system.
+ * Trees store references to blobs (files) and other trees (subdirectories).
+ */
 public class Tree {
 
     // List of entries in the tree
@@ -16,19 +20,44 @@ public class Tree {
     // Hash of this tree object
     private final String hash;
 
+    /**
+     * Constructs a Tree object with the given entries and hash.
+     *
+     * @param entries List of TreeEntry objects contained in this tree
+     * @param hash    The content hash that uniquely identifies this tree
+     */
     public Tree(List<TreeEntry> entries, String hash) {
         this.entries = entries;
         this.hash = hash;
     }
 
+    /**
+     * Returns the hash of this tree.
+     *
+     * @return The SHA-1 hash that uniquely identifies this tree
+     */
     public String getHash() {
         return hash;
     }
 
+    /**
+     * Returns the list of entries in this tree.
+     *
+     * @return List of TreeEntry objects representing files and subdirectories
+     */
     public List<TreeEntry> getEntries() {
         return entries;
     }
 
+    /**
+     * Creates a tree structure from the current index.
+     * Groups files by directory and recursively builds trees for the entire
+     * structure.
+     *
+     * @param repoPath     Path to the repository root
+     * @param indexEntries Map of file paths to index entries
+     * @return A Tree object representing the root of the tree structure
+     */
     public static Tree createTreeFromIndex(Path repoPath, Map<String, IndexEntry> indexEntries) {
         // Create a directory structure map. Key is directory path, value is list of
         // files in that directory
@@ -54,6 +83,17 @@ public class Tree {
         }
     }
 
+    /**
+     * Recursively builds a tree structure for a given directory.
+     * Processes both files in the current directory and all subdirectories.
+     *
+     * @param repoPath           Path to the repository root
+     * @param dirPath            Current directory path being processed
+     * @param directoryStructure Map of directory paths to their contained files
+     * @return A Tree object for the current directory
+     * @throws IOException              If there's an error reading or writing files
+     * @throws NoSuchAlgorithmException If the SHA-1 algorithm is not available
+     */
     private static Tree buildTree(Path repoPath, String dirPath, Map<String, List<IndexEntry>> directoryStructure)
             throws IOException, NoSuchAlgorithmException {
         // List to store tree entries
@@ -136,6 +176,14 @@ public class Tree {
             TREE
         }
 
+        /**
+         * Constructs a TreeEntry with the specified properties.
+         *
+         * @param name Name of the file or directory
+         * @param hash Content hash of the blob or tree
+         * @param mode File permissions
+         * @param type Type of entry (BLOB for files, TREE for directories)
+         */
         public TreeEntry(String name, String hash, String mode, EntryType type) {
             this.name = name;
             this.hash = hash;
@@ -143,18 +191,38 @@ public class Tree {
             this.type = type;
         }
 
+        /**
+         * Returns the name of this entry.
+         *
+         * @return Name of the file or directory
+         */
         public String getName() {
             return name;
         }
 
+        /**
+         * Returns the hash of this entry's content.
+         *
+         * @return Content hash of the blob or tree
+         */
         public String getHash() {
             return hash;
         }
 
+        /**
+         * Returns the mode (permissions) of this entry.
+         *
+         * @return File permissions
+         */
         public String getMode() {
             return mode;
         }
 
+        /**
+         * Returns the type of this entry.
+         *
+         * @return BLOB for files, TREE for directories
+         */
         public EntryType getType() {
             return type;
         }
