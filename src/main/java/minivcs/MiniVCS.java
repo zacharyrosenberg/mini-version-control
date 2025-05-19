@@ -155,15 +155,97 @@ public class MiniVCS {
 
     /**
      * Removes files from the working tree and the index.
+     * This command:
+     * 1. Validates that the file exists and is tracked in the index
+     * 2. Checks for uncommitted changes
+     * 3. Removes the file from the index
+     * 4. Provides a summary of the operation
      * 
      * @param args Command arguments. args[0] is the path to the file to remove
+     * @throws NoSuchAlgorithmException If SHA-1 algorithm is not available
      */
-    private static void rmCommand(String[] args) {
-        System.out.println("'rm' command not yet implemented");
-        // TODO: Implement rm command
-        // 1. Validate args (file is in index)
-        // 2. Remove file from index
-        // 3. Optionally remove file from working directory
+    private static void rmCommand(String[] args) throws NoSuchAlgorithmException {
+        // Validate that at least one file was provided
+        if (args.length == 0) {
+            System.out.println("No file provided");
+            return;
+        }
+
+        try {
+            // Find the root of the repository
+            Path repoRoot = findRepoRoot();
+            if (repoRoot == null) {
+                System.out.println("No MiniVCS repository found");
+                return;
+            }
+
+            // Load the current index to check tracked files
+            Index index = new Index();
+            index.load(repoRoot);
+
+            // Initialize counters for operation summary
+            int totalFiles = args.length;
+            int removedFiles = 0;
+            int skippedFiles = 0;
+            int untrackedFiles = 0;
+            int modifiedFiles = 0;
+
+            // Process each file provided in the arguments
+            for (String filePath : args) {
+                // Convert file path to absolute path and then to repository-relative path
+                Path fullPath = Paths.get(System.getProperty("user.dir")).resolve(filePath);
+                Path relativePath = repoRoot.relativize(fullPath);
+                String indexPath = relativePath.toString();
+
+                // Check if the file is tracked in the index
+                if (!index.getEntries().containsKey(indexPath)) {
+                    System.out.println("File is not tracked: " + filePath);
+                    untrackedFiles++;
+                    continue;
+                }
+
+                // Get the file's hash from the index
+                String storedHash = index.getEntries().get(indexPath).getHash();
+
+                // Calculate the current hash of the file in the working directory
+                String currentHash = ObjectStore.createHash(Paths.get(filePath));
+
+                // Check if the file has uncommitted changes by comparing hashes
+                if (!storedHash.equals(currentHash)) {
+                    System.out.println("File has uncommitted changes: " + filePath);
+                    modifiedFiles++;
+                    // TODO: Add --force option to override this check
+                    continue;
+                }
+
+                // Remove the file from the index
+                index.remove(repoRoot, Paths.get(filePath));
+                System.out.println("Removed: " + filePath);
+                removedFiles++;
+            }
+
+            // Print a summary of the operation
+            System.out.println("\nSummary:");
+            System.out.println("Total files processed: " + totalFiles);
+            System.out.println("Successfully removed: " + removedFiles);
+
+            // Only show skipped files categories if there were any
+            if (untrackedFiles > 0) {
+                System.out.println("Skipped (not tracked): " + untrackedFiles);
+            }
+            if (modifiedFiles > 0) {
+                System.out.println("Skipped (has uncommitted changes): " + modifiedFiles);
+            }
+
+            // Calculate and show total skipped files
+            skippedFiles = untrackedFiles + modifiedFiles;
+            if (skippedFiles > 0) {
+                System.out.println("Total skipped: " + skippedFiles);
+            }
+
+        } catch (IOException e) {
+            System.err.println("Error removing file: " + e.getMessage());
+        }
     }
 
     /**
@@ -324,6 +406,19 @@ public class MiniVCS {
 
             String commitHash = newCommit.getCommitHash();
             System.out.println("Created commit with hash: " + commitHash);
+
+            // Example of how references work:
+            // Before commit:
+            // .minivcs/HEAD contains: "ref: refs/heads/main"
+            // .minivcs/refs/heads/main contains: "abc123def456" (old commit hash)
+            //
+            // After commit with hash "xyz789":
+            // .minivcs/HEAD still contains: "ref: refs/heads/main"
+            // .minivcs/refs/heads/main now contains: "xyz789" (new commit hash)
+            //
+            // If HEAD was not pointing to a branch (detached HEAD state):
+            // .minivcs/HEAD would contain: "abc123def456" (old commit hash)
+            // After commit, it would be updated to: "xyz789" (new commit hash)
 
             // Update the HEAD and branch references
             Path headRefPath = null;
